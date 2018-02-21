@@ -4,118 +4,84 @@ namespace App;
 
 use App\Model\Block;
 use App\Model\GenesisBlock;
-use App\Model\Transaction;
-use App\Network\BroadcastBlockCommand;
-use App\Network\HostRegistry;
 use App\Storage\BlockStorageInterface;
 
 class Sperary
 {
-    const RESOLUTION_HASH = '2cb76';
-
-    /**
-     * @var Transaction[]
-     */
-    private $currentTransactions = [];
-
-    /**
-     * @var Block
-     */
-    private $latestBlock;
-
     /**
      * @var BlockStorageInterface
      */
     private $storage;
 
     /**
-     * @var HostRegistry
+     * @var Block
      */
-    private $hostRegistry;
+    private $latestBlock;
 
-    public function __construct(BlockStorageInterface $storage, HostRegistry $hostRegistry)
+    public function __construct(BlockStorageInterface $storage)
     {
         $this->storage = $storage;
-        $this->hostRegistry = $hostRegistry;
+    }
+
+    public function generateBlock(string $data, int $proof = null): Block
+    {
+        $latestBLock = $this->getLatestBlock();
+        $this->latestBlock = new Block($latestBLock->getIndex() + 1, $proof, time(), $latestBLock->getHash(), $data);
+        $this->storage->store($this->latestBlock->getHash(), $this->latestBlock);
+        $this->storage->storeTag('latest', $this->latestBlock->getHash());
+
+        return $this->latestBlock;
+    }
+
+    public function replaceChain(Block $latestBlock)
+    {
+        if ($latestBlock->getIndex() < $this->getLatestBlock()->getIndex() || !$this->isChainValid($latestBlock)) {
+            throw new \Exception('Chain not valid');
+        }
+
+        // TODO sync previous blocks
+        $this->latestBlock = $latestBlock;
+    }
+
+    public function isChainValid(Block $latestBlock): bool
+    {
+        $block = $latestBlock;
+        while ($block->getPreviousHash()) {
+            $previous = $this->storage->load($block->getPreviousHash());
+            if (!$this->isValid($previous, $block)) {
+                return false;
+            }
+
+            $block = $previous;
+        }
+
+        return true;
+    }
+
+    public function getLatestBlock(): Block
+    {
+        if ($this->latestBlock) {
+            return $this->latestBlock;
+        }
 
         $this->latestBlock = $this->storage->loadTag('latest');
         if (!$this->latestBlock) {
             $this->latestBlock = new GenesisBlock();
-
-            $hash = $this->hash($this->latestBlock);
-            $this->storage->store($hash, $this->latestBlock);
-            $this->storage->storeTag('latest', $hash);
+            $this->storage->store($this->latestBlock->getHash(), $this->latestBlock);
+            $this->storage->storeTag('latest', $this->latestBlock->getHash());
         }
-    }
-
-    public function mine(int $proof, string $recipient): Block
-    {
-        if (!$this->validProof($this->latestBlock->getProof(), $proof)) {
-            throw new \Exception('Poof not valid');
-        }
-
-        $this->addTransaction('0', $recipient, 1);
-
-        $this->latestBlock = new Block(
-            $this->latestBlock->getIndex() + 1, $this->currentTransactions, $proof, $this->hash($this->latestBlock)
-        );
-
-        $this->currentTransactions = [];
-
-        $hash = $this->hash($this->latestBlock);
-        $this->storage->store($hash, $this->latestBlock);
-        $this->storage->storeTag('latest', $hash);
-
-        $this->hostRegistry->callCommand(new BroadcastBlockCommand($this->latestBlock));
 
         return $this->latestBlock;
     }
 
-    public function applyBlock(Block $block): Block
+    private function isValid(Block $previous, Block $block): bool
     {
-        if ($this->storage->exists($this->hash($block))) {
-            throw new \Exception('Block already exists valid');
+        if ($previous->getIndex() + 1 !== $block->getIndex()) {
+            return false;
+        } else if ($previous->getHash() !== $previous->getPreviousHash()) {
+            return false;
         }
 
-        if (!$this->validProof($this->latestBlock->getProof(), $block->getProof())) {
-            throw new \Exception('Block not valid');
-        }
-
-        // TODO validate transactions
-
-        $this->latestBlock = $block;
-
-        // TODO only remove transactions from block
-        $this->currentTransactions = [];
-
-        $hash = $this->hash($this->latestBlock);
-        $this->storage->store($hash, $this->latestBlock);
-        $this->storage->storeTag('latest', $hash);
-
-        $this->hostRegistry->callCommand(new BroadcastBlockCommand($this->latestBlock));
-
-        return $block;
-    }
-
-    public function addTransaction(string $sender, string $recipient, int $amount): Transaction
-    {
-        return $this->currentTransactions[] = new Transaction($sender, $recipient, $amount);
-    }
-
-    public function validProof(int $lastProof, int $proof): bool
-    {
-        $guessHash = hash('sha256', serialize($lastProof . $proof));
-
-        return substr($guessHash, 0, 5) === self::RESOLUTION_HASH;
-    }
-
-    public function getLatestBlock()
-    {
-        return $this->latestBlock;
-    }
-
-    public function hash(Block $block)
-    {
-        return hash('sha256', serialize($block));
+        return true;
     }
 }

@@ -2,56 +2,47 @@
 
 namespace App\Model;
 
+use App\Hash;
+
 class Block
 {
-    public static function fromCommand(array $payload): Block
-    {
-        $transactions = array_map(
-            function (array $transaction) {
-                return Transaction::fromCommand($transaction);
-            },
-            $payload['transactions']
-        );
-
-        $block = new self($payload['index'], $transactions, $payload['proof'], $payload['previousHash']);
-        $block->timestamp = $payload['timestamp'];
-
-        return $block;
-    }
+    /**
+     * @var int
+     */
+    protected $index;
 
     /**
      * @var int
      */
-    private $index;
-
-    /**
-     * @var int
-     */
-    private $timestamp;
-
-    /**
-     * @var Transaction[]
-     */
-    private $transactions;
-
-    /**
-     * @var int
-     */
-    private $proof;
+    protected $timestamp;
 
     /**
      * @var string
      */
-    private $previousHash;
+    protected $data;
 
-    public function __construct(int $index, array $transactions, int $proof, string $previousHash)
+    /**
+     * @var int
+     */
+    protected $proof;
+
+    /**
+     * @var string
+     */
+    protected $previousHash;
+
+    public function __construct(int $index, int $proof, int $timestamp, ?string $previousHash, string $data)
     {
         $this->index = $index;
-        $this->transactions = $transactions;
         $this->proof = $proof;
+        $this->timestamp = $timestamp;
         $this->previousHash = $previousHash;
+        $this->data = $data;
+    }
 
-        $this->timestamp = time();
+    public function getHash(): string
+    {
+        return Hash::hashBlock($this);
     }
 
     public function getIndex(): int
@@ -64,12 +55,9 @@ class Block
         return $this->timestamp;
     }
 
-    /**
-     * @return Transaction[]
-     */
-    public function getTransactions(): array
+    public function getData(): string
     {
-        return $this->transactions;
+        return $this->data;
     }
 
     public function getProof(): int
@@ -80,5 +68,17 @@ class Block
     public function getPreviousHash(): string
     {
         return $this->previousHash;
+    }
+
+    public function json(): array
+    {
+        return [
+            'hash' => $this->getHash(),
+            'index' => $this->getIndex(),
+            'timestamp' => $this->getTimestamp(),
+            'proof' => $this->getProof(),
+            'previousHash' => $this->getPreviousHash(),
+            'data' => $this->getData(),
+        ];
     }
 }
