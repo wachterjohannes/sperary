@@ -5,6 +5,8 @@ namespace App;
 use App\Model\Block;
 use App\Model\GenesisBlock;
 use App\Model\Transaction;
+use App\Network\BroadcastBlockCommand;
+use App\Network\HostRegistry;
 use App\Storage\BlockStorageInterface;
 
 class Sperary
@@ -26,9 +28,15 @@ class Sperary
      */
     private $storage;
 
-    public function __construct(BlockStorageInterface $storage)
+    /**
+     * @var HostRegistry
+     */
+    private $hostRegistry;
+
+    public function __construct(BlockStorageInterface $storage, HostRegistry $hostRegistry)
     {
         $this->storage = $storage;
+        $this->hostRegistry = $hostRegistry;
 
         $this->latestBlock = $this->storage->loadTag('latest');
         if (!$this->latestBlock) {
@@ -58,7 +66,35 @@ class Sperary
         $this->storage->store($hash, $this->latestBlock);
         $this->storage->storeTag('latest', $hash);
 
+        $this->hostRegistry->callCommand(new BroadcastBlockCommand($this->latestBlock));
+
         return $this->latestBlock;
+    }
+
+    public function applyBlock(Block $block): Block
+    {
+        if ($this->storage->exists($this->hash($block))) {
+            throw new \Exception('Block already exists valid');
+        }
+
+        if (!$this->validProof($this->latestBlock->getProof(), $block->getProof())) {
+            throw new \Exception('Block not valid');
+        }
+
+        // TODO validate transactions
+
+        $this->latestBlock = $block;
+
+        // TODO only remove transactions from block
+        $this->currentTransactions = [];
+
+        $hash = $this->hash($this->latestBlock);
+        $this->storage->store($hash, $this->latestBlock);
+        $this->storage->storeTag('latest', $hash);
+
+        $this->hostRegistry->callCommand(new BroadcastBlockCommand($this->latestBlock));
+
+        return $block;
     }
 
     public function addTransaction(string $sender, string $recipient, int $amount): Transaction

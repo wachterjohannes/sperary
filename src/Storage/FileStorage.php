@@ -20,6 +20,11 @@ class FileStorage implements BlockStorageInterface
         }
     }
 
+    public function exists(string $hash): bool
+    {
+        return file_exists(sprintf('%s/%s.block', $this->directory, $hash));
+    }
+
     public function store(string $hash, Block $block): bool
     {
         file_put_contents(sprintf('%s/%s.block', $this->directory, $hash), serialize($block));

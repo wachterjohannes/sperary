@@ -70,7 +70,7 @@ class BlockController extends Controller
     /**
      * @Route("/api/blocks/{hash}", name="block_get", methods={"GET"})
      */
-    public function get(string $hash, BlockStorageInterface $storage)
+    public function getBlock(string $hash, BlockStorageInterface $storage)
     {
         try {
             $block = $storage->load($hash);
@@ -118,6 +118,7 @@ class BlockController extends Controller
                                 'sender' => $transaction->getSender(),
                                 'recipient' => $transaction->getRecipient(),
                                 'amount' => $transaction->getAmount(),
+                                'timestamp' => $transaction->getTimestamp(),
                             ];
                         },
                         $block->getTransactions()

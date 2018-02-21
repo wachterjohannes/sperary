@@ -1,4 +1,7 @@
 {
+    "clue/stream-filter": {
+        "version": "v1.4.0"
+    },
     "doctrine/annotations": {
         "version": "1.0",
         "recipe": {
@@ -23,14 +26,59 @@
     "doctrine/lexer": {
         "version": "v1.0.1"
     },
+    "guzzlehttp/psr7": {
+        "version": "1.4.2"
+    },
     "paragonie/random_compat": {
         "version": "v2.0.11"
+    },
+    "php-http/cache-plugin": {
+        "version": "v1.5.0"
+    },
+    "php-http/client-common": {
+        "version": "1.7.0"
+    },
+    "php-http/curl-client": {
+        "version": "v1.7.0"
+    },
+    "php-http/discovery": {
+        "version": "1.4.0"
+    },
+    "php-http/httplug": {
+        "version": "v1.1.0"
+    },
+    "php-http/httplug-bundle": {
+        "version": "1.6",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "master",
+            "version": "1.6",
+            "ref": "4655962c64e2de96c418caf576c57215711c7877"
+        }
+    },
+    "php-http/logger-plugin": {
+        "version": "v1.0.0"
+    },
+    "php-http/message": {
+        "version": "1.6.0"
+    },
+    "php-http/message-factory": {
+        "version": "v1.0.2"
+    },
+    "php-http/promise": {
+        "version": "v1.0.0"
+    },
+    "php-http/stopwatch-plugin": {
+        "version": "1.1.0"
     },
     "psr/cache": {
         "version": "1.0.1"
     },
     "psr/container": {
         "version": "1.0.0"
+    },
+    "psr/http-message": {
+        "version": "1.0.1"
     },
     "psr/log": {
         "version": "1.0.2"
@@ -49,6 +97,9 @@
             "version": "4.0",
             "ref": "aaddfdf43cdecd4cf91f992052d76c2cadc04543"
         }
+    },
+    "symfony/asset": {
+        "version": "v4.0.4"
     },
     "symfony/cache": {
         "version": "v4.0.4"
@@ -119,6 +170,9 @@
             "ref": "fadbfe33303a76e25cb63401050439aa9b1a9c7f"
         }
     },
+    "symfony/options-resolver": {
+        "version": "v4.0.4"
+    },
     "symfony/polyfill-mbstring": {
         "version": "v1.7.0"
     },
@@ -134,6 +188,9 @@
             "ref": "cda8b550123383d25827705d05a42acf6819fe4e"
         }
     },
+    "symfony/stopwatch": {
+        "version": "v4.0.4"
+    },
     "symfony/web-server-bundle": {
         "version": "3.3",
         "recipe": {
@@ -145,5 +202,8 @@
     },
     "symfony/yaml": {
         "version": "v4.0.4"
+    },
+    "twig/twig": {
+        "version": "v2.4.4"
     }
 }

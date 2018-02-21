@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+    sperary1:
+        build: .
+        ports:
+            - 8000:8000
+        volumes:
+            - ./var/docker/1:/var/www/var/data
+        environment:
+            APP_ENV: dev
+            APP_SECRET: 8692e0d0a64b13f9aa226ac4663603f3
+            APP_HOSTS: sperary2:8001/api/commands,sperary3:8002/api/commands
+    sperary2:
+        build: .
+        ports:
+            - 8001:8000
+        volumes:
+            - ./var/docker/2:/var/www/var/data
+        environment:
+            APP_ENV: dev
+            APP_SECRET: 8692e0d0a64b13f9aa226ac4663603f3
+            APP_HOSTS: sperary1:8000/api/commands,sperary3:8002/api/commands
+    sperary3:
+        build: .
+        ports:
+            - 8002:8000
+        volumes:
+            - ./var/docker/3:/var/www/var/data
+        environment:
+            APP_ENV: dev
+            APP_SECRET: 8692e0d0a64b13f9aa226ac4663603f3
+            APP_HOSTS: sperary1:8000/api/commands,sperary2:8001/api/commands

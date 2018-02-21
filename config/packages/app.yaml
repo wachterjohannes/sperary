@@ -1,0 +1,2 @@
+parameters:
+    app.hosts: "%env(APP_HOSTS)%"

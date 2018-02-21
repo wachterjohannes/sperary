@@ -7,6 +7,14 @@ use Ramsey\Uuid\Uuid;
 
 class Transaction
 {
+    public static function fromCommand(array $payload): Transaction
+    {
+        $transaction = new Transaction($payload['sender'], $payload['recipient'], $payload['amount']);
+        $transaction->timestamp = $payload['timestamp'];
+
+        return $transaction;
+    }
+
     /**
      * @var string
      */
@@ -27,6 +35,11 @@ class Transaction
      */
     private $amount;
 
+    /**
+     * @var int
+     */
+    private $timestamp;
+
     public function __construct(string $sender, string $recipient, float $amount)
     {
         $this->sender = $sender;
@@ -34,6 +47,7 @@ class Transaction
         $this->amount = $amount;
 
         $this->id = Uuid::uuid4()->toString();
+        $this->timestamp = time();
     }
 
     public function getId(): string
@@ -54,5 +68,10 @@ class Transaction
     public function getAmount(): float
     {
         return $this->amount;
+    }
+
+    public function getTimestamp(): int
+    {
+        return $this->timestamp;
     }
 }

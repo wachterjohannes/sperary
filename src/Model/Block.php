@@ -4,6 +4,21 @@ namespace App\Model;
 
 class Block
 {
+    public static function fromCommand(array $payload): Block
+    {
+        $transactions = array_map(
+            function (array $transaction) {
+                return Transaction::fromCommand($transaction);
+            },
+            $payload['transactions']
+        );
+
+        $block = new self($payload['index'], $transactions, $payload['proof'], $payload['previousHash']);
+        $block->timestamp = $payload['timestamp'];
+
+        return $block;
+    }
+
     /**
      * @var int
      */
