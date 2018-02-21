@@ -3,8 +3,15 @@
 namespace App\Model;
 
 
+use Ramsey\Uuid\Uuid;
+
 class Transaction
 {
+    /**
+     * @var string
+     */
+    private $id;
+
     /**
      * @var string
      */
@@ -25,6 +32,13 @@ class Transaction
         $this->sender = $sender;
         $this->recipient = $recipient;
         $this->amount = $amount;
+
+        $this->id = Uuid::uuid4()->toString();
+    }
+
+    public function getId(): string
+    {
+        return $this->id;
     }
 
     public function getSender(): string

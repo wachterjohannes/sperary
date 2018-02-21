@@ -78,7 +78,7 @@ class Sperary
         return $this->latestBlock;
     }
 
-    private function hash(Block $block)
+    public function hash(Block $block)
     {
         return hash('sha256', serialize($block));
     }
