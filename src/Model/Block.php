@@ -7,6 +7,11 @@ use App\Hash;
 class Block
 {
     /**
+     * @var string
+     */
+    protected $hash;
+
+    /**
      * @var int
      */
     protected $index;
@@ -24,17 +29,31 @@ class Block
     /**
      * @var int
      */
-    protected $proof;
+    protected $nonce;
+
+    /**
+     * @var int
+     */
+    protected $difficulty;
 
     /**
      * @var string
      */
     protected $previousHash;
 
-    public function __construct(int $index, int $proof, int $timestamp, ?string $previousHash, string $data)
-    {
+    public function __construct(
+        string $hash,
+        int $index,
+        int $nonce,
+        int $difficulty,
+        int $timestamp,
+        ?string $previousHash,
+        string $data
+    ) {
+        $this->hash = $hash;
         $this->index = $index;
-        $this->proof = $proof;
+        $this->nonce = $nonce;
+        $this->difficulty = $difficulty;
         $this->timestamp = $timestamp;
         $this->previousHash = $previousHash;
         $this->data = $data;
@@ -42,7 +61,7 @@ class Block
 
     public function getHash(): string
     {
-        return Hash::hashBlock($this);
+        return $this->hash;
     }
 
     public function getIndex(): int
@@ -60,9 +79,14 @@ class Block
         return $this->data;
     }
 
-    public function getProof(): int
+    public function getNonce(): int
     {
-        return $this->proof;
+        return $this->nonce;
+    }
+
+    public function getDifficulty(): int
+    {
+        return $this->difficulty;
     }
 
     public function getPreviousHash(): string

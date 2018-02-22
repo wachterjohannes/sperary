@@ -9,6 +9,16 @@ use App\Storage\BlockStorageInterface;
 class Sperary
 {
     /**
+     * In seconds
+     */
+    const BLOCK_GENERATION_INTERVAL = 30;
+
+    /**
+     * In blocks
+     */
+    const DIFFICULTY_ADJUSTMENT_INTERVAL = 5;
+
+    /**
      * @var BlockStorageInterface
      */
     private $storage;
@@ -23,10 +33,13 @@ class Sperary
         $this->storage = $storage;
     }
 
-    public function generateBlock(string $data, int $proof = null): Block
+    public function applyBlock(Block $block): Block
     {
-        $latestBLock = $this->getLatestBlock();
-        $this->latestBlock = new Block($latestBLock->getIndex() + 1, $proof, time(), $latestBLock->getHash(), $data);
+        if (!$this->isChainValid($block)) {
+            throw new \Exception('Chain not valid');
+        }
+
+        $this->latestBlock = $block;
         $this->storage->store($this->latestBlock->getHash(), $this->latestBlock);
         $this->storage->storeTag('latest', $this->latestBlock->getHash());
 
@@ -40,15 +53,16 @@ class Sperary
         }
 
         // TODO sync previous blocks
+        // TODO use accumulated difficulty
         $this->latestBlock = $latestBlock;
     }
 
     public function isChainValid(Block $latestBlock): bool
     {
         $block = $latestBlock;
-        while ($block->getPreviousHash()) {
+        while ($block) {
             $previous = $this->storage->load($block->getPreviousHash());
-            if (!$this->isValid($previous, $block)) {
+            if ($previous && !$this->isValid($previous, $block)) {
                 return false;
             }
 
@@ -66,19 +80,56 @@ class Sperary
 
         $this->latestBlock = $this->storage->loadTag('latest');
         if (!$this->latestBlock) {
-            $this->latestBlock = new GenesisBlock();
-            $this->storage->store($this->latestBlock->getHash(), $this->latestBlock);
-            $this->storage->storeTag('latest', $this->latestBlock->getHash());
+            $this->applyBlock(new GenesisBlock());
         }
 
         return $this->latestBlock;
     }
 
+    public function getDifficulty(): int
+    {
+        if ($this->getLatestBlock()->getIndex() % self::DIFFICULTY_ADJUSTMENT_INTERVAL === 0 && $this->getLatestBlock()
+                ->getIndex() !== 0) {
+            return $this->getAdjustedDifficulty();
+        }
+
+        return $this->latestBlock->getDifficulty();
+    }
+
+    private function getAdjustedDifficulty(): int
+    {
+        $block = $this->getLatestBlock();
+        for ($i = 0; $i < self::DIFFICULTY_ADJUSTMENT_INTERVAL; $i++) {
+            if (!$block->getPreviousHash()) {
+                break;
+            }
+
+            $block = $this->storage->load($block->getPreviousHash());
+        }
+
+        $expected = self::BLOCK_GENERATION_INTERVAL * self::DIFFICULTY_ADJUSTMENT_INTERVAL;
+        $taken = $this->getLatestBlock()->getTimestamp() - $block->getTimestamp();
+
+        if ($taken < $expected / 2) {
+            return $this->getLatestBlock()->getDifficulty() + 1;
+        } else if ($taken > $expected * 2) {
+            return min($this->getLatestBlock()->getDifficulty() - 1, 0);
+        }
+
+        return $block->getDifficulty();
+    }
+
     private function isValid(Block $previous, Block $block): bool
     {
-        if ($previous->getIndex() + 1 !== $block->getIndex()) {
+        if (!Hash::hashBlock($block) === $block->getHash()) {
             return false;
-        } else if ($previous->getHash() !== $previous->getPreviousHash()) {
+        } elseif (!Hash::isHashValid($block->getHash(), $block->getDifficulty())) {
+            return false;
+        } elseif (!($previous->getTimestamp() - 60 < $block->getTimestamp()) && $block->getTimestamp() - 60 < time()) {
+            return false;
+        } elseif ($previous->getIndex() + 1 !== $block->getIndex()) {
+            return false;
+        } else if ($previous->getHash() !== $block->getPreviousHash()) {
             return false;
         }
 
