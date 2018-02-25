@@ -2,9 +2,7 @@
 
 namespace App\Command;
 
-use App\Hash;
-use App\Model\Block;
-use App\Sperary;
+use App\Miner\Miner;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -15,19 +13,15 @@ class SperaryMineCommand extends Command
     protected static $defaultName = 'sperary:mine';
 
     /**
-     * @var Sperary
+     * @var Miner
      */
-    private $sperary;
+    private $miner;
 
-    /**
-     * SperaryMineCommand constructor.
-     * @param Sperary $sperary
-     */
-    public function __construct(Sperary $sperary)
+    public function __construct(Miner $miner)
     {
         parent::__construct();
 
-        $this->sperary = $sperary;
+        $this->miner = $miner;
     }
 
     protected function configure()
@@ -41,7 +35,7 @@ class SperaryMineCommand extends Command
 
         while (true) {
             $time = time();
-            $block = $this->mine();
+            $block = $this->miner->mine();
 
             $io->success(
                 sprintf(
@@ -53,46 +47,5 @@ class SperaryMineCommand extends Command
                 )
             );
         }
-    }
-
-    private function mine(): Block
-    {
-        $latestBlock = $this->sperary->getLatestBlock();
-        $difficulty = $this->sperary->getDifficulty();
-
-        $hash = null;
-        $blockData = null;
-        $nonce = 0;
-        while (!$hash || !Hash::isHashValid($hash, $difficulty)) {
-            $blockData = [
-                'index' => $latestBlock->getIndex() + 1,
-                'nonce' => $nonce,
-                'difficulty' => $difficulty,
-                'timestamp' => time(),
-                'previousHash' => $latestBlock->getHash(),
-                'data' => ''
-            ];
-            $hash = Hash::hashBlockData(
-                $blockData['index'],
-                $blockData['previousHash'],
-                $blockData['timestamp'],
-                $blockData['data'],
-                $blockData['difficulty'],
-                $blockData['nonce']
-            );
-            $nonce++;
-        }
-
-        $block = new Block(
-            $hash,
-            $blockData['index'],
-            $blockData['nonce'],
-            $blockData['difficulty'],
-            $blockData['timestamp'],
-            $blockData['previousHash'],
-            $blockData['data']
-        );
-
-        return $this->sperary->applyBlock($block);
     }
 }
